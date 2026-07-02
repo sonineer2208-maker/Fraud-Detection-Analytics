@@ -1,0 +1,134 @@
+
+---
+
+## 1️⃣2️⃣ `notebooks/01_eda_and_modeling.ipynb` (Notebook Template)
+
+```python
+# %% [markdown]
+# # Fraud Detection Analytics - EDA & Modeling
+
+# %% [markdown]
+# ## 1. Setup
+
+# %%
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from imblearn.over_sampling import SMOTE
+import warnings
+warnings.filterwarnings('ignore')
+
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
+
+# %% [markdown]
+# ## 2. Load Data
+
+# %%
+df = pd.read_csv('../data/creditcard.csv')
+print(f"Shape: {df.shape}")
+print(f"\nColumns: {df.columns.tolist()}")
+df.head()
+
+# %% [markdown]
+# ## 3. Exploratory Data Analysis
+
+# %%
+# Class distribution
+print(df['Class'].value_counts())
+print(f"\nFraud ratio: {df['Class'].mean():.4f}")
+
+plt.figure(figsize=(8, 4))
+df['Class'].value_counts().plot(kind='bar')
+plt.title('Class Distribution')
+plt.xticks([0, 1], ['Normal', 'Fraud'], rotation=0)
+plt.ylabel('Count')
+plt.show()
+
+# %%
+# Amount distribution by class
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+df[df['Class']==0]['Amount'].hist(bins=50, alpha=0.7, label='Normal')
+df[df['Class']==1]['Amount'].hist(bins=50, alpha=0.7, label='Fraud')
+plt.xlabel('Amount')
+plt.ylabel('Frequency')
+plt.legend()
+plt.title('Amount Distribution')
+
+plt.subplot(1, 2, 2)
+df[df['Class']==0]['Amount'].hist(bins=50, alpha=0.7, label='Normal')
+df[df['Class']==1]['Amount'].hist(bins=50, alpha=0.7, label='Fraud')
+plt.yscale('log')
+plt.xlabel('Amount')
+plt.ylabel('Frequency (log)')
+plt.legend()
+plt.title('Amount Distribution (Log Scale)')
+
+plt.tight_layout()
+plt.show()
+
+# %%
+# Correlation with target
+correlations = df.corr()['Class'].drop('Class').sort_values(key=abs, ascending=False)
+plt.figure(figsize=(10, 8))
+correlations.head(20).plot(kind='barh')
+plt.title('Top 20 Features by Correlation with Fraud')
+plt.show()
+
+# %% [markdown]
+# ## 4. Preprocessing
+
+# %%
+X = df.drop(['Class', 'Time'], axis=1)
+y = df['Class']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# %% [markdown]
+# ## 5. Baseline Model
+
+# %%
+# Logistic Regression
+lr = LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42)
+lr.fit(X_train_scaled, y_train)
+
+y_pred = lr.predict(X_test_scaled)
+print(classification_report(y_test, y_pred, target_names=['Normal', 'Fraud']))
+print(f"ROC-AUC: {roc_auc_score(y_test, lr.predict_proba(X_test_scaled)[:, 1]):.4f}")
+
+# %% [markdown]
+# ## 6. With SMOTE
+
+# %%
+smote = SMOTE(random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train_scaled, y_train)
+
+rf = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42, n_jobs=-1)
+rf.fit(X_train_smote, y_train_smote)
+
+y_pred_rf = rf.predict(X_test_scaled)
+print(classification_report(y_test, y_pred_rf, target_names=['Normal', 'Fraud']))
+print(f"ROC-AUC: {roc_auc_score(y_test, rf.predict_proba(X_test_scaled)[:, 1]):.4f}")
+
+# %% [markdown]
+# ## 7. Feature Importance
+
+# %%
+importances = pd.Series(rf.feature_importances_, index=X.columns)
+importances.nlargest(20).plot(kind='barh', figsize=(10, 8))
+plt.title('Top 20 Feature Importances')
+plt.show()

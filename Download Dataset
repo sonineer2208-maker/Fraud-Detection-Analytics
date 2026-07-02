@@ -1,0 +1,3 @@
+# Place creditcard.csv in the data/ directory
+mkdir -p data
+# Download from Kaggle and move to data/creditcard.csv

@@ -1,0 +1,8 @@
+# Train default models
+python main.py --data data/creditcard.csv
+
+# Train specific models
+python main.py --data data/creditcard.csv --models random_forest xgboost lightgbm
+
+# Without SMOTE
+python main.py --data data/creditcard.csv --no-smote

@@ -1,0 +1,41 @@
+# Data Configuration
+data:
+  raw_path: "data/creditcard.csv"
+  test_size: 0.2
+  random_state: 42
+
+# Features
+features:
+  target_column: "Class"
+  drop_columns: ["Time"]
+  scale_features: true
+
+# Model Configuration
+models:
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    class_weight: "balanced"
+    random_state: 42
+  
+  logistic_regression:
+    max_iter: 1000
+    class_weight: "balanced"
+    random_state: 42
+  
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    scale_pos_weight: "auto"
+    random_state: 42
+
+# Training
+training:
+  cv_folds: 5
+  scoring: "roc_auc"
+
+# Paths
+paths:
+  models_dir: "models"
+  reports_dir: "reports/figures"
